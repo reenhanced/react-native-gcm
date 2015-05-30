@@ -1,0 +1,42 @@
+{
+  "name": "bh5-gcm",
+  "version": "0.1.0",
+  "description": "Google Cloud Messaging for React Native",
+  "main": "index.js",
+  "scripts": {
+    "build": "./node_modules/.bin/babel ./src/ --out-dir ./lib/ --stage 0 --ignore '/node_modules/' --external-helpers --optional runtime",
+    "lint": "./node_modules/.bin/eslint ./src"
+  },
+  "dependencies": {
+    "babel": "^5.4.7",
+    "babel-runtime": "^5.4.7",
+    "bh5-emitter": "^1.1.4"
+  },
+  "devDependencies": {
+    "babel-eslint": "^3.1.9",
+    "eslint": "^0.21.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bh5-pods/bh5-gcm.git"
+  },
+  "keywords": [
+    "React",
+    "react-native",
+    "React",
+    "Native",
+    "iOS",
+    "Android",
+    "Google",
+    "GCM",
+    "APNS",
+    "push",
+    "notifications"
+  ],
+  "author": "Bodhi5 Inc <info@bodhi5.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bh5-pods/react-native-gcm/issues"
+  },
+  "homepage": "https://github.com/bh5-pods/react-native-gcm#readme"
+}
