@@ -6,13 +6,13 @@
 //  Copyright (c) 2015 Facebook. All rights reserved.
 //
 
-#import "RCTBridge.h"
+#import "RCTBridgeModule.h"
 
 @interface RCT_EXTERN_MODULE(GCM, NSObject)
 
 RCT_EXTERN_METHOD(register)
 RCT_EXTERN_METHOD(sendMessage:(NSDictionary *)data)
-RCT_EXTERN_METHOD(topicSubscribe:(NSString *)topic)
-RCT_EXTERN_METHOD(topicUnsubscribe:(NSString *)topic)
+RCT_EXTERN_METHOD(topicSubscribe:(NSString *)topic withCallback:(RCTResponseSenderBlock *)callback)
+RCT_EXTERN_METHOD(topicUnsubscribe:(NSString *)topic withCallback:(RCTResponseSenderBlock *)callback)
 
 @end

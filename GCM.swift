@@ -11,15 +11,16 @@ import Foundation
 let GCM_MESSAGE_RECEIVED_EVENT = "GCMMessageReceived"
 let GCM_REGISTERED_CLIENT_EVENT = "GCMRegisteredClient"
 let GCM_RECEIVED_DEVICE_TOKEN_EVENT = "GCMReceivedDeviceToken"
+let EmptyResponse = [String:AnyObject]()
 
 @objc(GCM)
 class GCM: NSObject, GGLInstanceIDDelegate {
   
 
-  static let DESTRUCT_EVENT = "destruct"
   static let CONNECTION_EVENT = "connection"
   static let DISCONNECT_EVENT = "disconnect"
   static let REGISTERED_CLIENT_EVENT = "registeredClient"
+  static let TOKEN_REFRESH_EVENT = "tokenRefresh"
   static let ENTERED_BACKGROUND_EVENT = "enteredBackground"
   static let BECAME_ACTIVE_EVENT = "becameActive"
   static let MESSAGE_EVENT = "message"
@@ -102,7 +103,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   func _appDidEnterBackground(notification: NSNotification) {
     GCMService.sharedInstance().disconnect();
     self.connectedToGCM = false;
-    self.emitEvent(GCM.ENTERED_BACKGROUND_EVENT, body: nil)
+    self.emitEvent(GCM.ENTERED_BACKGROUND_EVENT, body: EmptyResponse)
   }
   
   func _appDidBecomeActive(notification: NSNotification) {
@@ -111,7 +112,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
         self.emitEvent(GCM.BECAME_ACTIVE_EVENT, body: ["error": error.localizedDescription])
       } else {
         self.connectedToGCM = true
-        self.emitEvent(GCM.BECAME_ACTIVE_EVENT, body: nil)
+        self.emitEvent(GCM.BECAME_ACTIVE_EVENT, body: EmptyResponse)
       }
     })
   }
@@ -119,8 +120,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   func _handleGCMRegistration(registrationToken: String!, error: NSError!) {
     if (registrationToken != nil) {
       self.registrationToken = registrationToken
-      println("Registration Token: \(registrationToken)")
-      let userInfo = ["registrationToken": registrationToken]
+      let userInfo = [ "registrationToken": registrationToken! ]
       self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: userInfo)
     } else {
       let userInfo = ["error": error.localizedDescription]
@@ -140,11 +140,12 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     if let info = notification.userInfo as? Dictionary<String,AnyObject> {
       self.emitEvent(GCM.MESSAGE_EVENT, body: info)
     } else {
-      self.emitEvent(GCM.MESSAGE_EVENT, body: nil)
+      self.emitEvent(GCM.MESSAGE_EVENT, body: EmptyResponse)
     }
   }
   
-  @objc func register() {
+  @objc
+  func register() {
     // Configure the Google context: parses the GoogleService-Info.plist, and initializes
     // the services that have entries in the file
     var configureError:NSError?
@@ -165,6 +166,11 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   }
   
   @objc
+  func stopAllRequests() {
+    GGLInstanceID.sharedInstance().stopAllRequests()
+  }
+  
+  @objc
   func sendMessage(data: [String:AnyObject]!) {
     let msg = data["message"] as! [String:AnyObject]
     let to = data["to"] as! String
@@ -180,33 +186,31 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   
   
   @objc
-  func topicSubscribe(topic: String!) {
+  func topicSubscribe(topic: String!, withCallback callback: RCTResponseSenderBlock) {
     // If the app has a registration token and is connected to GCM, proceed to subscribe to the
     // topic
     if(self.registrationToken != nil) {
       GCMPubSub.sharedInstance().subscribeWithToken(self.registrationToken, topic: topic,
-        options: nil, handler: {(NSError error) -> Void in
+        options: nil, handler:
+        {(NSError error) -> Void in
           if (error != nil) {
             // Treat the "already subscribed" error more gently
             if error.code == 3001 {
-              self.emitEvent(GCM.TOPIC_SUBSCRIBE_EVENT,
-                body: ["error": "Already subscribed to \(topic) : \(error.localizedDescription)"])
+                callback([["error": "Already subscribed to \(topic) : \(error.localizedDescription)"]])
             } else {
-              self.emitEvent(GCM.TOPIC_SUBSCRIBE_EVENT,
-                body: ["error": "Subscription failed: \(error.localizedDescription)"])
+                callback([["error": "Subscription failed: \(error.localizedDescription)"]])
             }
           } else {
-            self.emitEvent(GCM.TOPIC_SUBSCRIBE_EVENT,
-              body: ["success": true, "message": "Subscribed to \(topic))"])
+              callback([["success": true, "message": "Subscribed to \(topic))"]])
           }
       })
       return
     }
-    self.emitEvent(GCM.TOPIC_SUBSCRIBE_EVENT, body: ["error": "Not connected to GCM"])
+    callback([["error": "Not connected to GCM"]])
   }
   
   @objc
-  func topicUnsubscribe(topic: String!) {
+  func topicUnsubscribe(topic: String!, withCallback callback: RCTResponseSenderBlock) {
     // If the app has a registration token and is connected to GCM, proceed to subscribe to the
     // topic
     if(self.registrationToken != nil) {
@@ -215,19 +219,16 @@ class GCM: NSObject, GGLInstanceIDDelegate {
           if (error != nil) {
             // Treat the "already subscribed" error more gently
             if error.code == 3001 {
-              self.emitEvent(GCM.TOPIC_UNSUBSCRIBE_EVENT,
-                body: ["error": "Already subscribed to \(topic) : \(error.localizedDescription)"])
+                callback([["error": "Already subscribed to \(topic) : \(error.localizedDescription)"]])
             } else {
-              self.emitEvent(GCM.TOPIC_UNSUBSCRIBE_EVENT,
-                body: ["error": "Subscription failed: \(error.localizedDescription)"])
+                callback([["error": "Subscription failed: \(error.localizedDescription)"]])
             }
           } else {
-            self.emitEvent(GCM.TOPIC_UNSUBSCRIBE_EVENT,
-              body: ["success": true, "message": "Subscribed to \(topic))"])
+              callback([["success": true, "message": "Subscribed to \(topic))"]])
           }
       })
       return
     }
-    self.emitEvent(GCM.TOPIC_UNSUBSCRIBE_EVENT, body: ["error": "Not connected to GCM"])
+    callback([["error": "Not connected to GCM"]])
   }
 }

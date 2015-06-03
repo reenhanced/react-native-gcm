@@ -17,12 +17,20 @@ export class Client extends EventEmitter {
     this._gcm.register();
   }
 
-  topicSubscribe(topic) {
-    this._gcm.topicSubscribe(topic);
+  topicSubscribe(topic, fn) {
+    let cb = fn ? fn : () => {};
+    this._gcm.topicSubscribe(topic, (res) => {
+      let err = res.error ? new Error(res.error) : null;
+      cb(err, res);
+    });
   }
 
-  topicUnsubscribe(topic) {
-    this._gcm.topicUnsubscribe(topic);
+  topicUnsubscribe(topic, fn) {
+    let cb = fn ? fn : () => {};
+    this._gcm.topicUnsubscribe(topic, (res) => {
+      let err = res.error ? new Error(res.error) : null;
+      cb(err, res);
+    });
   }
 
   sendMessage(data) {
