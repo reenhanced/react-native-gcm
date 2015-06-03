@@ -4,7 +4,7 @@
   "description": "Google Cloud Messaging for React Native",
   "main": "index.js",
   "scripts": {
-    "build": "./node_modules/.bin/babel ./src/ --out-dir ./lib/ --stage 0 --ignore '/node_modules/' --external-helpers --optional runtime",
+    "prepublish": "./node_modules/.bin/babel ./src/ --out-dir ./lib/ --stage 0 --ignore '/node_modules/' --external-helpers --optional runtime",
     "lint": "./node_modules/.bin/eslint ./src"
   },
   "dependencies": {
