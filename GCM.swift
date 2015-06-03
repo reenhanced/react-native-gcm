@@ -78,7 +78,6 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   
   deinit {
     NSNotificationCenter.defaultCenter().removeObserver(self)
-    self.emitEvent(GCM.DESTRUCT_EVENT, body: ["message: "])
   }
  
   func emitEvent(type:String!, body: AnyObject!) {
