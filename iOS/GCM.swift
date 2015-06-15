@@ -8,9 +8,27 @@
 
 import Foundation
 
-let GCM_MESSAGE_RECEIVED_EVENT = "GCMMessageReceived"
-let GCM_REGISTERED_CLIENT_EVENT = "GCMRegisteredClient"
-let GCM_RECEIVED_DEVICE_TOKEN_EVENT = "GCMReceivedDeviceToken"
+let GCMRegisteredForRemoteNotifications = "GCMAppRegisteredForRemoteNotifications"
+let GCMReceivedRemoteNotification = "GCMAppReceivedRemoteNotification"
+
+extension AppDelegate {
+  func application(application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
+    let userInfo: [String: AnyObject]!  = ["deviceToken": deviceToken]
+    NSNotificationCenter.defaultCenter().postNotificationName(GCMRegisteredForRemoteNotifications, object: nil, userInfo: userInfo)
+  }
+  
+  func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
+    let userInfo = ["deviceToken": NSData(), "error": error]
+    NSNotificationCenter.defaultCenter().postNotificationName(GCMRegisteredForRemoteNotifications, object: nil, userInfo: userInfo)
+  }
+  
+  func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject], fetchCompletionHandler completionHandler: (UIBackgroundFetchResult) -> Void) {
+    NSNotificationCenter.defaultCenter().postNotificationName(GCMReceivedRemoteNotification, object: nil, userInfo: userInfo)
+    completionHandler(UIBackgroundFetchResult.NoData)
+  }
+}
+
+
 let EmptyResponse = [String:AnyObject]()
 
 @objc(GCM)
@@ -27,30 +45,6 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   static let TOPIC_SUBSCRIBE_EVENT = "topicSubscribe"
   static let TOPIC_UNSUBSCRIBE_EVENT = "topicUnsubscribe"
   
-  
-  //MARK: Class Methods
-  
-  class func appDidReceiveRemoteNotification(userInfo: [NSObject: AnyObject]){
-    // This works only if the app started the GCM service
-    GCMService.sharedInstance().appDidReceiveMessage(userInfo);
-    NSNotificationCenter.defaultCenter().postNotificationName(GCM_MESSAGE_RECEIVED_EVENT, object: nil, userInfo: userInfo)
-  }
-  
-  class func appDidReceiveRemoteNotification(userInfo: [NSObject: AnyObject], handler: (UIBackgroundFetchResult) -> Void) {
-    // This works only if the app started the GCM service
-    GCM.appDidReceiveRemoteNotification(userInfo)
-    handler(UIBackgroundFetchResult.NoData)
-  }
-  
-  class func appDidRegisterForRemoteNotificationsWithDeviceToken(deviceToken: NSData!, error: NSError! ) {
-    let userInfo: [String: AnyObject]!
-    if deviceToken != nil {
-      userInfo = ["deviceToken": deviceToken]
-    } else {
-      userInfo = ["error": error]
-    }
-    NSNotificationCenter.defaultCenter().postNotificationName( GCM_RECEIVED_DEVICE_TOKEN_EVENT, object: nil, userInfo: userInfo)
-  }
   
   var bridge: RCTBridge!
   var connectedToGCM = false
@@ -72,9 +66,8 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     let nc: NSNotificationCenter = NSNotificationCenter.defaultCenter();
     nc.addObserver(self, selector: "_appDidEnterBackground:", name: UIApplicationDidEnterBackgroundNotification, object: nil)
     nc.addObserver(self, selector: "_appDidBecomeActive:", name: UIApplicationDidBecomeActiveNotification, object: nil)
-    
-    nc.addObserver(self, selector: "_appRegisteredWithToken:", name: GCM_RECEIVED_DEVICE_TOKEN_EVENT, object: nil)
-    nc.addObserver(self, selector: "_handleMessageReceived:", name: GCM_MESSAGE_RECEIVED_EVENT, object: nil)
+    nc.addObserver(self, selector: "_appDidRegisterForRemoteNotifications:", name: GCMRegisteredForRemoteNotifications, object: nil)
+    nc.addObserver(self, selector: "_appDidReceiveRemoteNotification:", name: GCMReceivedRemoteNotification, object: nil)
   }
   
   deinit {
@@ -85,9 +78,17 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     self.bridge.eventDispatcher.sendDeviceEventWithName("GCMEvent", body: ["type": type, "data": body])
   }
   
-  func _appRegisteredWithToken(notification: NSNotification) {
-    if let info = notification.userInfo as? Dictionary<String, AnyObject> {
-      if let token = info["deviceToken"] as? NSData {
+  func _appDidReceiveRemoteNotification(notification: NSNotification) {
+    if let info = notification.userInfo as? Dictionary<String,AnyObject> {
+      self.emitEvent(GCM.MESSAGE_EVENT, body: info)
+    } else {
+      self.emitEvent(GCM.MESSAGE_EVENT, body: EmptyResponse)
+    }
+  }
+  
+  func _appDidRegisterForRemoteNotifications(notification: NSNotification) {
+    if let info = notification.userInfo as? Dictionary<String, NSData> {
+      if let token = info["deviceToken"] {
         self.deviceToken = token
         GGLInstanceID.sharedInstance().startWithConfig(GGLInstanceIDConfig.defaultConfig());
         
@@ -158,8 +159,8 @@ class GCM: NSObject, GGLInstanceIDDelegate {
       return
     }
     
-    var types: UIUserNotificationType = .Badge | .Alert | .Sound
-    var settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
+    let types: UIUserNotificationType = [UIUserNotificationType.Badge, UIUserNotificationType.Alert, UIUserNotificationType.Sound]
+    let settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
     UIApplication.sharedApplication().registerUserNotificationSettings( settings )
     UIApplication.sharedApplication().registerForRemoteNotifications()
     GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())

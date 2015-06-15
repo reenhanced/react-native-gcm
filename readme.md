@@ -25,9 +25,6 @@ Add ObjC / Swift Bridge Header
 #import <Google/CloudMessaging.h>
 ```
 
-Add required methods to your AppDelegate
-- See `AppDelegate_Example.swift` for integration example
-
 ## Usage
 ```js
 import gcm from 'react-native-gcm';
