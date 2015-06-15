@@ -17,6 +17,14 @@ export class Client extends EventEmitter {
     this._gcm.register();
   }
 
+  unregister(fn) {
+    let cb = fn ? fn : () => {};
+    this._gcm.unregister((res) => {
+      let err = res.error ? new Error(res.error) : null;
+      cb(err, res);
+    });
+  }
+
   topicSubscribe(topic, fn) {
     let cb = fn ? fn : () => {};
     this._gcm.topicSubscribe(topic, (res) => {

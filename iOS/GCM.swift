@@ -23,6 +23,7 @@ extension AppDelegate {
   }
   
   func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject], fetchCompletionHandler completionHandler: (UIBackgroundFetchResult) -> Void) {
+    print("%v", userInfo)
     NSNotificationCenter.defaultCenter().postNotificationName(GCMReceivedRemoteNotification, object: nil, userInfo: userInfo)
     completionHandler(UIBackgroundFetchResult.NoData)
   }
@@ -87,8 +88,8 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   }
   
   func _appDidRegisterForRemoteNotifications(notification: NSNotification) {
-    if let info = notification.userInfo as? Dictionary<String, NSData> {
-      if let token = info["deviceToken"] {
+    if let info = notification.userInfo as? Dictionary<String, AnyObject> {
+      if let token = info["deviceToken"] as? NSData {
         self.deviceToken = token
         GGLInstanceID.sharedInstance().startWithConfig(GGLInstanceIDConfig.defaultConfig());
         
@@ -119,6 +120,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   }
   
   func _handleGCMRegistration(registrationToken: String!, error: NSError!) {
+    print("token: %v\nerror: %v", registrationToken, error)
     if (registrationToken != nil) {
       self.registrationToken = registrationToken
       let userInfo = [ "registrationToken": registrationToken! ]
@@ -164,6 +166,18 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     UIApplication.sharedApplication().registerUserNotificationSettings( settings )
     UIApplication.sharedApplication().registerForRemoteNotifications()
     GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())
+  }
+  
+  @objc
+  func unregister(callback: RCTResponseSenderBlock) {
+    GGLInstanceID.sharedInstance().stopAllRequests()  
+    GGLInstanceID.sharedInstance().deleteTokenWithAuthorizedEntity(self.gcmSenderID, scope: kGGLInstanceIDScopeGCM, handler: { (NSError error) -> Void in
+      if (error != nil ) {
+        callback([["error": "Unable to unregister: \(error.localizedDescription) Make sure you have registerd first.'", "code": error.code]])
+        return
+      }
+      callback([["success": true]])
+    })
   }
   
   @objc
