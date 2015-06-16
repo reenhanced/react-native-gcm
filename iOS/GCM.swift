@@ -50,7 +50,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   var bridge: RCTBridge!
   var connectedToGCM = false
   var subscribedToTopic = false
-  var gcmSenderID: String?
+  var gcmSenderID: String!
   var deviceToken: NSData?
   var registrationToken: String?
   var registrationOptions = [String: AnyObject]()
@@ -123,7 +123,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     print("token: %v\nerror: %v", registrationToken, error)
     if (registrationToken != nil) {
       self.registrationToken = registrationToken
-      let userInfo = [ "registrationToken": registrationToken! ]
+      let userInfo = [ "registrationToken": registrationToken ]
       self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: userInfo)
     } else {
       let userInfo = ["error": error.localizedDescription]
@@ -231,8 +231,9 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   func topicSubscribe(topic: String!, withCallback callback: RCTResponseSenderBlock) {
     // If the app has a registration token and is connected to GCM, proceed to subscribe to the
     // topic
+    
     if(self.registrationToken != nil) {
-      GCMPubSub.sharedInstance().subscribeWithToken(self.registrationToken, topic: topic,
+      GCMPubSub.sharedInstance().subscribeWithToken(self.registrationToken!, topic: topic,
         options: nil, handler:
         {(NSError error) -> Void in
           if (error != nil) {
@@ -256,7 +257,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     // If the app has a registration token and is connected to GCM, proceed to subscribe to the
     // topic
     if(self.registrationToken != nil) {
-      GCMPubSub.sharedInstance().unsubscribeWithToken(self.registrationToken, topic: topic,
+      GCMPubSub.sharedInstance().unsubscribeWithToken(self.registrationToken!, topic: topic,
         options: nil, handler: {(NSError error) -> Void in
           if (error != nil) {
             // Treat the "already subscribed" error more gently
