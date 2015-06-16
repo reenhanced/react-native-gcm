@@ -32,7 +32,22 @@ import gcm from 'react-native-gcm';
 
 ### Register for Push Notifications
 ```js
-gcm.register()
+// Default permission {alert: true, badge: true, sound: true}
+gcm.register(/*permission*/)
+```
+
+### Set App Badge Value
+```js
+// Set App Badge to value
+gcm.setAppBadge(2, (newBadgeVal) => { });
+
+// Increment App Badge value
+gcm.setAppBadge(2, true, (newBadgeVal) => { });
+```
+
+### Get App Badge Value
+```js
+gcm.getAppBadge((badgeVal) => { });
 ```
 
 ### Subscribe to topic

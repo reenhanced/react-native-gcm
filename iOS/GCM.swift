@@ -148,7 +148,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   }
   
   @objc
-  func register() {
+  func register(permissions: NSDictionary?) {
     // Configure the Google context: parses the GoogleService-Info.plist, and initializes
     // the services that have entries in the file
     var configureError:NSError?
@@ -161,7 +161,22 @@ class GCM: NSObject, GGLInstanceIDDelegate {
       return
     }
     
-    let types: UIUserNotificationType = [UIUserNotificationType.Badge, UIUserNotificationType.Alert, UIUserNotificationType.Sound]
+    var types: UIUserNotificationType = []
+    
+    if (permissions != nil) {
+      if (permissions!["alert"] != nil) {
+        types.insert(UIUserNotificationType.Alert)
+      }
+      if (permissions!["badge"] != nil) {
+        types.insert(UIUserNotificationType.Badge)
+      }
+      if (permissions!["sound"] != nil) {
+        types.insert(UIUserNotificationType.Sound)
+      }
+    } else {
+      types = [UIUserNotificationType.Alert, UIUserNotificationType.Badge, UIUserNotificationType.Sound]
+    }
+    
     let settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
     UIApplication.sharedApplication().registerUserNotificationSettings( settings )
     UIApplication.sharedApplication().registerForRemoteNotifications()
@@ -178,6 +193,18 @@ class GCM: NSObject, GGLInstanceIDDelegate {
       }
       callback([["success": true]])
     })
+  }
+  
+  @objc
+  func setAppBadge(val: Int, advance: Bool, withCallback callback: RCTResponseSenderBlock) {
+    print("%v", val)
+    UIApplication.sharedApplication().applicationIconBadgeNumber = (advance) ? UIApplication.sharedApplication().applicationIconBadgeNumber.advancedBy(val) : val;
+    callback([UIApplication.sharedApplication().applicationIconBadgeNumber])
+  }
+ 
+  @objc
+  func getAppBadge(callback: RCTResponseSenderBlock) {
+    callback([UIApplication.sharedApplication().applicationIconBadgeNumber])
   }
   
   @objc
