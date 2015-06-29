@@ -1,6 +1,6 @@
 {
   "name": "react-native-gcm",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Google Cloud Messaging for React Native",
   "main": "index.js",
   "scripts": {
@@ -15,14 +15,14 @@
     "babel": "^5.6.14",
     "babel-eslint": "^3.1.9",
     "eslint": "^0.21.0",
-    "react": "^0.13.3"
+    "react": "*"
   },
   "peerDependencies": {
-    "react": "^0.13.3"
+    "react": "*"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bh5-pods/bh5-gcm.git"
+    "url": "git+https://github.com/bh5-pods/react-native-gcm.git"
   },
   "keywords": [
     "React",

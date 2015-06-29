@@ -3,10 +3,12 @@
 //  techtime
 //
 //  Created by Christian Sullivan on 5/28/15.
-//  Copyright (c) 2015 Facebook. All rights reserved.
+//  Copyright (c) 2015 Bodhi5 Inc. All rights reserved.
 //
 
 import Foundation
+import Google
+import React
 
 let GCMRegisteredForRemoteNotifications = "GCMAppRegisteredForRemoteNotifications"
 let GCMReceivedRemoteNotification = "GCMAppReceivedRemoteNotification"
@@ -23,7 +25,6 @@ extension AppDelegate {
   }
   
   func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject], fetchCompletionHandler completionHandler: (UIBackgroundFetchResult) -> Void) {
-    print("%v", userInfo)
     NSNotificationCenter.defaultCenter().postNotificationName(GCMReceivedRemoteNotification, object: nil, userInfo: userInfo)
     completionHandler(UIBackgroundFetchResult.NoData)
   }
@@ -73,10 +74,13 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   
   deinit {
     NSNotificationCenter.defaultCenter().removeObserver(self)
+    GCMService.sharedInstance().teardown()
   }
  
   func emitEvent(type:String!, body: AnyObject!) {
+    if self.bridge.valid {
     self.bridge.eventDispatcher.sendDeviceEventWithName("GCMEvent", body: ["type": type, "data": body])
+    }
   }
   
   func _appDidReceiveRemoteNotification(notification: NSNotification) {
@@ -120,13 +124,13 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   }
   
   func _handleGCMRegistration(registrationToken: String!, error: NSError!) {
-    print("token: %v\nerror: %v", registrationToken, error)
+    print("token: \(registrationToken) error:\(error)")
     if (registrationToken != nil) {
       self.registrationToken = registrationToken
       let userInfo = [ "registrationToken": registrationToken ]
       self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: userInfo)
     } else {
-      let userInfo = ["error": error.localizedDescription]
+      let userInfo = ["error": "\(error!.localizedDescription)"]
       self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: userInfo)
     }
   }
@@ -149,6 +153,7 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   
   @objc
   func register(permissions: NSDictionary?) {
+    if GGLContext.sharedInstance().configuration == nil {
     // Configure the Google context: parses the GoogleService-Info.plist, and initializes
     // the services that have entries in the file
     var configureError:NSError?
@@ -157,10 +162,12 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     self.gcmSenderID = GGLContext.sharedInstance().configuration.gcmSenderID
     
     if configureError != nil {
-      self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: ["error": configureError!.localizedDescription])
+      self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: ["error": "\(configureError?.localizedDescription)"])
       return
     }
     
+    GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())
+    }
     var types: UIUserNotificationType = []
     
     if (permissions != nil) {
@@ -180,7 +187,6 @@ class GCM: NSObject, GGLInstanceIDDelegate {
     let settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
     UIApplication.sharedApplication().registerUserNotificationSettings( settings )
     UIApplication.sharedApplication().registerForRemoteNotifications()
-    GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())
   }
   
   @objc
