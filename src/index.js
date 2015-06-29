@@ -1,8 +1,9 @@
 'use strict';
 
-import { DeviceEventEmitter } from 'react-native';
+import { DeviceEventEmitter, NativeModules } from 'react-native';
 import EventEmitter from 'bh5-emitter';
-import { GCM } from 'NativeModules';
+
+let { GCM } = NativeModules;
 
 export class Client extends EventEmitter {
   constructor() {
