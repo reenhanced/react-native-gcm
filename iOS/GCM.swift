@@ -153,40 +153,42 @@ class GCM: NSObject, GGLInstanceIDDelegate {
   
   @objc
   func register(permissions: NSDictionary?) {
-    if GGLContext.sharedInstance().configuration == nil {
-    // Configure the Google context: parses the GoogleService-Info.plist, and initializes
-    // the services that have entries in the file
-    var configureError:NSError?
-    
-    GGLContext.sharedInstance().configureWithError(&configureError)
-    self.gcmSenderID = GGLContext.sharedInstance().configuration.gcmSenderID
-    
-    if configureError != nil {
-      self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: ["error": "\(configureError?.localizedDescription)"])
-      return
-    }
-    
-    GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())
-    }
-    var types: UIUserNotificationType = []
-    
-    if (permissions != nil) {
-      if (permissions!["alert"] != nil) {
-        types.insert(UIUserNotificationType.Alert)
+    dispatch_async(dispatch_get_main_queue(), {
+      if GGLContext.sharedInstance().configuration == nil {
+      // Configure the Google context: parses the GoogleService-Info.plist, and initializes
+      // the services that have entries in the file
+      var configureError:NSError?
+      
+      GGLContext.sharedInstance().configureWithError(&configureError)
+      self.gcmSenderID = GGLContext.sharedInstance().configuration.gcmSenderID
+      
+      if configureError != nil {
+        self.emitEvent(GCM.REGISTERED_CLIENT_EVENT, body: ["error": "\(configureError?.localizedDescription)"])
+        return
       }
-      if (permissions!["badge"] != nil) {
-        types.insert(UIUserNotificationType.Badge)
+      
+      GCMService.sharedInstance().startWithConfig(GCMConfig.defaultConfig())
       }
-      if (permissions!["sound"] != nil) {
-        types.insert(UIUserNotificationType.Sound)
+      var types: UIUserNotificationType = []
+      
+      if (permissions != nil) {
+        if (permissions!["alert"] != nil) {
+          types.insert(UIUserNotificationType.Alert)
+        }
+        if (permissions!["badge"] != nil) {
+          types.insert(UIUserNotificationType.Badge)
+        }
+        if (permissions!["sound"] != nil) {
+          types.insert(UIUserNotificationType.Sound)
+        }
+      } else {
+        types = [UIUserNotificationType.Alert, UIUserNotificationType.Badge, UIUserNotificationType.Sound]
       }
-    } else {
-      types = [UIUserNotificationType.Alert, UIUserNotificationType.Badge, UIUserNotificationType.Sound]
-    }
-    
-    let settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
-    UIApplication.sharedApplication().registerUserNotificationSettings( settings )
-    UIApplication.sharedApplication().registerForRemoteNotifications()
+      
+      let settings: UIUserNotificationSettings = UIUserNotificationSettings( forTypes: types, categories: nil )
+      UIApplication.sharedApplication().registerUserNotificationSettings( settings )
+      UIApplication.sharedApplication().registerForRemoteNotifications()
+    })
   }
   
   @objc
